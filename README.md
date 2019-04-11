@@ -1,0 +1,160 @@
+## Header only boost::fiber thread pool library
+
+A single-file header-only C++17 library providing 
+a [boost::fiber](https://github.com/boostorg/fiber) thread pool.
+
+The library is based on 
+[A Platform-Independent Thread Pool Using C++14](http://roar11.com/2016/01/a-platform-independent-thread-pool-using-c14/)
+and most description provided there also applies to FiberPool. 
+
+The main difference is that 
+FiberPool does not use its own custom work queue, as in the upstream code. Instead
+it uses a thread-safe [work queue](https://www.boost.org/doc/libs/1_69_0/libs/fiber/doc/html/fiber/synchronization/channels/buffered_channel.html)
+provided by fiber library. Also we use `boost::fibers::future` directly, rather than
+wrapping as in the upstream code.
+
+## Requirements
+
+ - C++17 compiler
+ - boost::fiber 
+
+## Example compilation 
+
+```bash
+
+```
+		
+## Example usage
+
+More examples are in `examples` folder.
+
+A key thing to note is that all tasks submitted to the FiberPool
+must be fiber friendly. This means that we have to use 
+`boost::this_fiber::yeid()` in
+tasks that use long running loops 
+to give other fibers a chance to run. Otherwise such tasks will block
+entire worker thead, and subsequently, all fibers running in the thread. 
+Similarly, we use `boost::this_fiber::sleep_for()` instead
+of `std::this_thread::sleep_for()` to put to sleep one fiber, rather than
+entire thread with all its fibers. The same goes for `boost::fibers::mutex` 
+and `boost::fibers::condition_variable`, which
+fiber library also provides to be used instead of those in `std`.
+
+### Lambda task
+
+```C++
+// submit lambda fiber task to the pool
+auto future_1 = DefaultFiberPool::submit_job(
+        [](){
+                size_t i = 0;
+
+                while(++i < 5)
+                {
+                    std::cout << "lambda task" << std::endl;
+				    boost::this_fiber::sleep_for(5s);
+                }
+
+                return i;
+            });
+
+//
+// do other things here if needed, e.g., submit second fiber task
+//
+
+// wait for the result
+auto result = future_1.get();
+```
+
+### Lambda task with parameters
+
+```C++
+std::string val {}; // will hold result of the task
+
+std::string msg {"FiberPool"}; // input variabel for the task
+
+auto future_2 = DefaultFiberPool::submit_job(
+        [](auto const& in_str, auto& out_str)
+        {
+			// give other fibers a chance to run
+			boost::this_fiber::yield();
+
+			// when we get to be executed again, resume
+			// from here
+            out_str = in_str;
+
+        }, std::cref(msg), std::ref(val));
+//
+// do other things here if needed, e.g., submit second fiber task
+//
+
+// wait for the fiber task to finish.
+future_2.get();
+
+// once task finishes, val is ready 
+std::cout << val << std::endl;
+```
+
+### Functor
+
+```C++
+struct FunctorTask
+{
+	size_t counter {10};
+
+	void operator()()
+	{
+		while(counter --> 0)
+		{
+			// give other fibers a chance to run
+			boost::this_fiber::yield();
+			std::cout << "Counter: " << counter << std::endl;
+		}
+	}
+}
+
+FunctorTask task {.counter = 20};
+
+auto a_future = DefaultFiberPool::submit_job(task);
+
+//
+// do other things here if needed, e.g., submit second fiber task
+//
+
+a_future.get();
+```
+
+### Function
+
+
+```C++
+uint64_t factorial(uint64_t n)
+{
+   if(n > 1)
+   {
+	   // give other fiber chance to execute	
+	   // not that we need to yeild() from time to time
+	   // in our tasks so that other finers in the same 
+	   // thread have chance to run		
+       boost::this_fiber::yield();
+
+       return n * factorial(n - 1);
+   }
+
+   return 1;
+}
+
+auto factorial_future 
+	= DefaultFiberPool::submit_job(&factorial, 50);
+
+//
+// do other things here if needed, e.g., submit second fiber task
+//
+
+auto factorial_calculated = factorial_future.get();
+
+std::cout << factorial_calculated << std::endl;
+```
+
+## How can you help?
+
+Constructive criticism, issues and code fixes/improvements are welcomed.

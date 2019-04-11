@@ -1,0 +1,16 @@
+.DS_Store
+.sass-cache
+*.*~
+*.user
+*.autosave
+*.user.*
+.idea/
+*.gcov
+cmake-build-debug/
+build
+.cproject
+.project
+.settings/
+.kdev4/
+.vscode/
+.ycm_extra_conf.py
