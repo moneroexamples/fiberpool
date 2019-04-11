@@ -23,8 +23,17 @@ bettween threads can be expesive, and
 careful synchronization of access to common resources. 
 
 
-The boost::fiber library solves theses issues as it allows 
-to run multiple fibers on single thread, concurently.  
+The boost::fiber library minimizes theses issues as it allows 
+to run multiple fibers on single thread or multiple threads, concurently. 
+Therefore one can run multiple  "simultaneously" tasks/fibers on a 
+single thread without worring about synchronization "simultaneously".
+
+
+However, the boost::fiber library lacks a tool for easy submitions and
+managment of tasks/fibers to be executed by several threads. The FiberPool
+library addresses this, by providing an easy way for spanning server 
+worker threads and submitting tasks/fibers to them.
+
 
 ## Requirements
 
@@ -63,7 +72,7 @@ entire thread with all its fibers. The same goes for `boost::fibers::mutex`
 and `boost::fibers::condition_variable`, which
 fiber library also provides to be used instead of those in `std`.
 
-### Lambda task
+#### Lambda task
 
 ```C++
 // submit lambda fiber task to the pool
@@ -88,7 +97,7 @@ auto future_1 = DefaultFiberPool::submit_job(
 auto result = future_1.get();
 ```
 
-### Lambda task with parameters
+#### Lambda task with parameters
 
 ```C++
 std::string val {}; // will hold result of the task
@@ -117,7 +126,7 @@ future_2.get();
 std::cout << val << std::endl;
 ```
 
-### Functor
+#### Functor
 
 ```C++
 struct FunctorTask
@@ -146,7 +155,7 @@ auto a_future = DefaultFiberPool::submit_job(task);
 a_future.get();
 ```
 
-### Function
+#### Function
 
 
 ```C++
@@ -176,7 +185,39 @@ auto factorial_future
 auto factorial_calculated = factorial_future.get();
 
 std::cout << factorial_calculated << std::endl;
+
+
+#### Task throws an exception
+
+
+```C++
+void throws()
+{
+    boost::this_fiber::sleep_for(3s);
+
+    // task wil throw an exception 
+    throw std::runtime_error("Exception thrown in " 
+                             "a task running in fiber " 
+                             "in the pool");
+}
+
+auto future_3 = DefaultFiberPool::submit_job(throws);
+
+//
+// do other things here if needed, e.g., submit second fiber task
+//
+
+// get exception pointer to check if the task thrown something
+std::exception_ptr exp_ptr {future_3.get_exception_ptr()};
+
+if (exp_ptr)
+{
+    // if exception was thrown, rethrow it
+    std::rethrow_exception(exp_ptr);
+}
+
 ```
+
 
 ## How can you help?
 

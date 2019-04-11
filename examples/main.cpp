@@ -176,7 +176,7 @@ custom_pool()
 int
 main(int argc, const char *argv[])
 {
-// In the following examples we are going 
+// In the few following examples we are going 
 // to use DefaultFiberPool only
 
 
@@ -287,4 +287,4 @@ custom_pool();
 
 
 return EXIT_SUCCESS;
-}
+
