@@ -6,13 +6,6 @@
 using namespace std::literals::chrono_literals;
 
 /**
- * Helper function that will make
- * a current fiber sleep for some random 
- * number of seconds
- */
-
-
-/**
  * Example of a functor that will
  * be executed by a FiberPool
  */
@@ -174,7 +167,7 @@ custom_pool()
 
 	std::cout << "\b\b " <<  std::endl;
 
-	//fiber_pool.close_queue();
+	fiber_pool.close_queue();
 }
 
 
@@ -290,8 +283,7 @@ if (exp_ptr)
 DefaultFiberPool::close();
 
 // now we try using custom pool
-//custom_pool();
-
+custom_pool();
 
 
 return EXIT_SUCCESS;

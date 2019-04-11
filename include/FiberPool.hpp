@@ -1,7 +1,6 @@
 // FiberPool based on:
 // http://roar11.com/2016/01/a-platform-independent-thread-pool-using-c14/
 
-
 #pragma once
 
 #include <boost/fiber/all.hpp> 
@@ -144,7 +143,6 @@ public:
    
 	~FiberPool()
 	{
-        std::cout << "Entered ~FiberPool" << std::endl;
 		for(auto& thread : m_threads)
 		{
 			 if(thread.joinable())
@@ -152,7 +150,6 @@ public:
 				 thread.join();
 			 }
 		}
-        std::cout << "~FiberPool" << std::endl;
 	}
 
 private:
