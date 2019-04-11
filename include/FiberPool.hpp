@@ -163,10 +163,11 @@ private:
      */
     void worker()
     {
-        // make this thread participate in shared_work sheduler
+        // make this thread participate in shared_work 
+        // fiber sharing
         //
         // We use "shared_work" sheduler so that the work 
-        // is distributed equally over all thread
+        // is distributed equally among all threads
 
         boost::fibers::use_scheduling_algorithm<
             boost::fibers::algo::shared_work>();
@@ -198,11 +199,7 @@ private:
                         task->execute();
                     }).detach();
         }
-
-		std::cout << "Thread finishing" <<std::endl;
     }
-
-    std::atomic_bool m_done {false};
 
     // worker threads. these are the threads which will 
     // be executing our fibers. Since we use work_shearing scheduling
@@ -224,7 +221,7 @@ namespace DefaultFiberPool
 inline auto& 
 get_pool()
 {
-    static FiberPool::FiberPool default_fp {1};
+    static FiberPool::FiberPool default_fp {};
     return default_fp;
 };
 
