@@ -5,35 +5,37 @@ a [boost::fiber](https://github.com/boostorg/fiber) thread pool.
 
 The library is based on 
 [A Platform-Independent Thread Pool Using C++14](http://roar11.com/2016/01/a-platform-independent-thread-pool-using-c14/)
-and most description provided there also applies to FiberPool. 
+and most description provided there also applies to FiberPool. The main differences are:
 
-The main difference is that 
-FiberPool does not use its own custom work queue, as in the upstream code. Instead
-it uses a thread-safe [work queue](https://www.boost.org/doc/libs/1_69_0/libs/fiber/doc/html/fiber/synchronization/channels/buffered_channel.html)
-provided by fiber library. Also we use `boost::fibers::future` directly, rather than
-wrapping as in the upstream code.
+ - C++17 instead of C++14  
+ - using `boost::fibers::packaged_task` in place of `std::packaged_task`
+ - using `boost::fibers::future` in place of `std::future`
+ - using `boost::fibers::buffered_channel` instead of custom pool queue
+ - usage of the futures direclty, instead of a custom wrapper
+ - `submit()` and `submit_job()` return `std::optional<boost::fiber::future>`
+ - more code examples
+
 
 ## Motivation
 
-In my projects I usually need to run many threads. There are two main issues
-with that: 
+In my projects I usually need to create many long-running threads. 
+There are two main issues with that: 
  - context switching between
-bettween threads can be expesive, and
+between threads can be expesive, and
  - working with multiple threads requires
 careful synchronization of access to common resources. 
 
 
-The boost::fiber library minimizes theses issues as it allows 
-to run multiple fibers on single thread or multiple threads, concurently. 
-Therefore one can run multiple  "simultaneously" tasks/fibers on a 
-single thread without worring about synchronization "simultaneously".
+The `boost::fiber` library minimizes these issues as it allows 
+to run multiple fibers on single or multiple threads, concurently. 
+Therefore one can run multiple "simultaneously" tasks/fibers on a 
+single thread without worring about synchronization.
 
-
-However, the boost::fiber library lacks a tool for easy submitions and
+However, the `boost::fiber` library lacks a tool for easy submition and
 managment of tasks/fibers to be executed by several threads. The FiberPool
-library addresses this, by providing an easy way for spanning server 
-worker threads and submitting tasks/fibers to them.
-
+library addresses this, by providing an easy way for spawing several 
+worker threads, submitting tasks/fibers to them, and getting their 
+results and execptions (using futures).
 
 ## Requirements
 
@@ -93,8 +95,12 @@ auto future_1 = DefaultFiberPool::submit_job(
 // do other things here if needed, e.g., submit second fiber task
 //
 
-// wait for the result
-auto result = future_1.get();
+// future_1 is std::optional<boost::fibers::future>. 
+if (future_1)
+{
+    // wait for the result
+    auto result = future_1->get();
+}
 ```
 
 #### Lambda task with parameters
@@ -120,7 +126,7 @@ auto future_2 = DefaultFiberPool::submit_job(
 //
 
 // wait for the fiber task to finish.
-future_2.get();
+future_2->get();
 
 // once task finishes, val is ready 
 std::cout << val << std::endl;
@@ -152,7 +158,14 @@ auto a_future = DefaultFiberPool::submit_job(task);
 // do other things here if needed, e.g., submit second fiber task
 //
 
-a_future.get();
+// submit_job returns std::optional<boost::fibers::future>>;
+// the optional will be empty if task submittion failed to the pool
+// due to it being full or closed for instance.
+
+if (a_future)
+{
+    a_future->get();
+}
 ```
 
 #### Function
@@ -182,10 +195,10 @@ auto factorial_future
 // do other things here if needed, e.g., submit second fiber task
 //
 
-auto factorial_calculated = factorial_future.get();
+auto factorial_calculated = factorial_future->get();
 
 std::cout << factorial_calculated << std::endl;
-
+```
 
 #### Task throws an exception
 
@@ -208,7 +221,7 @@ auto future_3 = DefaultFiberPool::submit_job(throws);
 //
 
 // get exception pointer to check if the task thrown something
-std::exception_ptr exp_ptr {future_3.get_exception_ptr()};
+auto exp_ptr = future_3->get_exception_ptr();
 
 if (exp_ptr)
 {
@@ -217,7 +230,6 @@ if (exp_ptr)
 }
 
 ```
-
 
 ## How can you help?
 

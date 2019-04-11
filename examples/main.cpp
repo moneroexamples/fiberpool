@@ -150,7 +150,7 @@ custom_pool()
 
 
 	// wait for factorial task to finish
-	auto factorial_calculated = factorial_future.get();
+	auto factorial_calculated = factorial_future->get();
 
 	std::cout << "Factorial calcualted: " 
 			  << factorial_calculated << std::endl;
@@ -158,7 +158,7 @@ custom_pool()
 	// primes_future does not return any value because
 	// it uses reference of an input parameter to provide
 	// found prime values.
-	primes_future.get();
+	primes_future->get();
 
 	std::cout << "Primes found: ";
 
@@ -205,7 +205,7 @@ auto future_1 = DefaultFiberPool::submit_job(
 // instead we just proceed to submit next lambda
 
 // submit 10 functors to the pool
-using task_future_t = boost::fibers::future<void>;
+using task_future_t = std::optional<boost::fibers::future<void>>;
 std::vector<task_future_t> futures; 
 
 for (auto i = 0; i < 10; i++)
@@ -253,17 +253,17 @@ auto future_3 = DefaultFiberPool::submit_job(throws);
 // wait for their completion.
 // we use future to wait.
 
-auto result_1 = future_1.get();
+auto result_1 = future_1->get();
 
 std::cout << "val: " << val << std::endl;
 std::cout << "result from first lambda: " << result_1 << std::endl;
 
 
 // wait for future 3
-future_3.wait();
+future_3->wait();
 
 // get exception pointer to check if the task thrown something
-std::exception_ptr exp_ptr {future_3.get_exception_ptr()};
+auto exp_ptr = future_3->get_exception_ptr();
 
 if (exp_ptr)
 {
@@ -284,7 +284,6 @@ DefaultFiberPool::close();
 
 // now we try using custom pool
 custom_pool();
-
 
 return EXIT_SUCCESS;
 }

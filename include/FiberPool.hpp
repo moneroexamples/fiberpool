@@ -118,12 +118,15 @@ public:
         auto status = m_work_queue.push(
                 std::make_unique<task_t>(std::move(task)));
 
-        assert(status == boost::fibers::channel_op_status::success);
+        if (status != boost::fibers::channel_op_status::success)
+        {
+            return std::optional<std::decay_t<decltype(result_future)>> {};
+        }
 
         // return the future to the caller so that 
         // we can get the result when the fiber with our task 
         // completes
-        return result_future;
+        return std::make_optional(std::move(result_future));
     }
 
     /**
