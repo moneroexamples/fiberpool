@@ -13,6 +13,19 @@ it uses a thread-safe [work queue](https://www.boost.org/doc/libs/1_69_0/libs/fi
 provided by fiber library. Also we use `boost::fibers::future` directly, rather than
 wrapping as in the upstream code.
 
+## Motivation
+
+In my projects I usually need to run many threads. There are two main issues
+with that: 
+ - context switching between
+bettween threads can be expesive, and
+ - working with multiple threads requires
+careful synchronization of access to common resources. 
+
+
+The boost::fiber library solves theses issues as it allows 
+to run multiple fibers on single thread, concurently.  
+
 ## Requirements
 
  - C++17 compiler
@@ -20,20 +33,30 @@ wrapping as in the upstream code.
 
 ## Example compilation 
 
-```bash
+To compile the example provided:
 
+```bash
+git clone git@github.com:moneroexamples/fiberpool.git
+
+cd fiberpool && mkdir build && cd build
+
+cmake ..
+
+make 
 ```
 		
 ## Example usage
 
-More examples are in `examples` folder.
+More examples are in the `examples` folder.
 
 A key thing to note is that all tasks submitted to the FiberPool
-must be fiber friendly. This means that we have to use 
+**must be fiber friendly**. This means that we have to use 
 `boost::this_fiber::yeid()` in
 tasks that use long running loops 
 to give other fibers a chance to run. Otherwise such tasks will block
-entire worker thead, and subsequently, all fibers running in the thread. 
+its worker thread, and subsequently, all fibers running in the thread. 
+
+
 Similarly, we use `boost::this_fiber::sleep_for()` instead
 of `std::this_thread::sleep_for()` to put to sleep one fiber, rather than
 entire thread with all its fibers. The same goes for `boost::fibers::mutex` 
@@ -70,12 +93,12 @@ auto result = future_1.get();
 ```C++
 std::string val {}; // will hold result of the task
 
-std::string msg {"FiberPool"}; // input variabel for the task
+std::string msg {"FiberPool"}; // input variabile for the task
 
 auto future_2 = DefaultFiberPool::submit_job(
         [](auto const& in_str, auto& out_str)
         {
-			// give other fibers a chance to run
+    		// give other fibers a chance to run
 			boost::this_fiber::yield();
 
 			// when we get to be executed again, resume
