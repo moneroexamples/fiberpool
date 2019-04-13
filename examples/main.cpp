@@ -182,19 +182,19 @@ main(int argc, const char *argv[])
 
 // submit lambda to the pool
 auto future_1 = DefaultFiberPool::submit_job(
-        [](){
-                size_t i = 0;
+    [](){
+            size_t i = 0;
 
-                while(++i < 5)
-                {
-					std::ostringstream os;
-                    os  << "lambda task i: " << i <<  '\n';
-					std::cout << os.str() << std::flush;
-				    boost::this_fiber::sleep_for(2s);
-                }
+            while(++i < 5)
+            {
+                std::ostringstream os;
+                os  << "lambda task i: " << i <<  '\n';
+                std::cout << os.str() << std::flush;
+                boost::this_fiber::sleep_for(2s);
+            }
 
-                return i;
-            });
+            return i;
+        });
 
 // we are not waiting here for it to finish running
 // as the fiber created for the lumbda submitted is 
@@ -210,7 +210,6 @@ std::vector<task_future_t> futures;
 
 for (auto i = 0; i < 10; i++)
 {
-
 	 // the functor will notify when a fiber executing it
 	 // has switch thread
 	 auto&& a_future = DefaultFiberPool::submit_job(SomeFunctor(), 
@@ -226,25 +225,24 @@ for (auto i = 0; i < 10; i++)
 // are run by fibers in the FiberPool. We just proceed to submition
 // of another lambda
 
-
 // submit another lambda which will take parameter
 // by reference
 std::string val {};
 std::string msg {"FiberPool"};
 
 auto future_2 = DefaultFiberPool::submit_job(
-        [](auto const& in_str,  auto& out_str)
-        {
-			// suspend this task's fiber for 3s
-			boost::this_fiber::sleep_for(3s);
+    [](auto const& in_str,  auto& out_str)
+    {
+        // suspend this task's fiber for 3s
+        boost::this_fiber::sleep_for(3s);
 
-			std::ostringstream os;
-			os << "setting val to:" << in_str << '\n';
-			std::cout << os.str() << std::flush;
+        std::ostringstream os;
+        os << "setting val to:" << in_str << '\n';
+        std::cout << os.str() << std::flush;
 
-            out_str = in_str;
+        out_str = in_str;
 
-        }, std::cref(msg), std::ref(val));
+    }, std::cref(msg), std::ref(val));
 
 
 auto future_3 = DefaultFiberPool::submit_job(throws);
@@ -257,7 +255,6 @@ auto result_1 = future_1->get();
 
 std::cout << "val: " << val << std::endl;
 std::cout << "result from first lambda: " << result_1 << std::endl;
-
 
 // wait for future 3
 future_3->wait();
@@ -278,7 +275,6 @@ if (exp_ptr)
                   << e.what() << std::endl;
     }
 }
-
 
 DefaultFiberPool::close();
 

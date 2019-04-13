@@ -23,3 +23,11 @@ target_link_libraries(${PROJECT_NAME}
         Boost::fiber
         pthread)
 
+
+include(CTest)
+
+if (BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+

@@ -4,28 +4,93 @@
 #pragma once
 
 #include <boost/fiber/all.hpp> 
+
 	
 namespace FiberPool
 {
 
+inline auto 
+no_of_defualt_threads()
+{
+    return std::max(std::thread::hardware_concurrency(), 2u) - 1u;
+}
+
+
+template <typename BaseChannel>
+class TaskQueue 
+{
+public:
+    using value_type = typename BaseChannel::value_type;
+
+    explicit TaskQueue(std::size_t capacity)
+        : m_base_channel {capacity}
+    {}
+
+    TaskQueue(const TaskQueue& rhs) = delete;
+    TaskQueue& operator=(TaskQueue const& rhs) = delete;
+
+    TaskQueue(TaskQueue&& other) = default;
+    TaskQueue& operator=(TaskQueue&& other) = default;
+
+    virtual ~TaskQueue() = default;
+
+    boost::fibers::channel_op_status 
+    push(typename BaseChannel::value_type const& value)
+    {
+        return m_base_channel.push(value);
+    }
+    
+    boost::fibers::channel_op_status 
+    push(typename BaseChannel::value_type&& value)
+    {
+        return m_base_channel.push(std::move(value));
+    }
+    
+    boost::fibers::channel_op_status 
+    pop(typename BaseChannel::value_type& value)
+    {
+        return m_base_channel.pop(value);
+    }
+
+    void close() noexcept 
+    {
+        m_base_channel.close();
+    }
+
+private:
+    BaseChannel m_base_channel; 
+};
+
+
+class IFiberTask
+{
+public:
+
+    // how many running fibers there are
+    inline static std::atomic<size_t> no_of_fibers {0};
+
+    IFiberTask(void) = default;
+
+    virtual ~IFiberTask(void) = default;
+    IFiberTask(const IFiberTask& rhs) = delete;
+    IFiberTask& operator=(const IFiberTask& rhs) = delete;
+    IFiberTask(IFiberTask&& other) = default;
+    IFiberTask& operator=(IFiberTask&& other) = default;
+
+    /**
+     * Run the task.
+     */
+    virtual void execute() = 0;
+};
+
+template<
+    template<typename> typename task_queue_t 
+        = boost::fibers::buffered_channel,
+    typename work_task_t = std::unique_ptr<IFiberTask>
+>
 class FiberPool
 {
 private:
-    class IFiberTask
-    {
-    public:
-        IFiberTask(void) = default;
-        virtual ~IFiberTask(void) = default;
-        IFiberTask(const IFiberTask& rhs) = delete;
-        IFiberTask& operator=(const IFiberTask& rhs) = delete;
-        IFiberTask(IFiberTask&& other) = default;
-        IFiberTask& operator=(IFiberTask&& other) = default;
-
-        /**
-         * Run the task.
-         */
-        virtual void execute() = 0;
-    };
 
 
     /**
@@ -50,7 +115,9 @@ private:
          */
         void execute() override
         {
+			++no_of_fibers;
             m_func();
+			--no_of_fibers;
         }
 
     private:
@@ -60,8 +127,7 @@ private:
 public:
 
     FiberPool()
-        : FiberPool {
-            std::max(std::thread::hardware_concurrency(), 2u) - 1u}
+        : FiberPool {no_of_defualt_threads()}
     {}
 
     explicit FiberPool(
@@ -139,10 +205,20 @@ public:
      */
     FiberPool& operator=(FiberPool const& rhs) = delete;
 
-    void close_queue() 
+    void close_queue() noexcept 
     {
         m_work_queue.close();
     }
+
+    auto threads_no() const noexcept
+    {
+        return m_threads.size();
+    }
+
+	auto fibers_no() const noexcept
+	{
+		return IFiberTask::no_of_fibers.load();
+	}
    
 	~FiberPool()
 	{
@@ -177,7 +253,8 @@ private:
         
         // create a placeholder for packaged task for 
         // to-be-created fiber to execute
-        auto packaged_search_task = decltype(m_work_queue)::value_type {}; 
+        auto packaged_search_task 
+            = typename decltype(m_work_queue)::value_type {}; 
 
         // fetch a packaged task from the work queue.
         // if there is nothing, we are just going to wait
@@ -213,7 +290,8 @@ private:
     // reciver for the fiber. we are only going to block when
     // the buffered_channel is full. Otherwise, tasks will be just
     // waiting in the queue till some fiber picks them up.
-    boost::fibers::buffered_channel<std::unique_ptr<IFiberTask>> m_work_queue;
+    
+    TaskQueue<task_queue_t<work_task_t>> m_work_queue;
 };
 
 }
