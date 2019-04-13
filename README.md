@@ -55,7 +55,10 @@ cmake ..
 
 make 
 ```
-		
+
+After the compilation `fiberexample` binary should be avaiable. Run it to 
+execute examples. Also can run `make test` to run FiberPool tests.
+
 ## Example usage
 
 More examples are in the `examples` folder.
