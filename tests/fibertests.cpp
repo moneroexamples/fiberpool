@@ -88,6 +88,8 @@ TEST_CASE("Return value", "[default-pool]")
 
 			return r;
 		});
+    
+        REQUIRE(bool {opt_future} == true);
 
         auto r = opt_future->get();
 
@@ -111,6 +113,8 @@ TEST_CASE("Return value", "[default-pool]")
 			return r;
 		}, std::cref(in_obj));
 
+        REQUIRE(bool {opt_future} == true);
+
         auto r = opt_future->get();
 
         CHECK(r == 15);    
@@ -126,6 +130,8 @@ TEST_CASE("Return value", "[default-pool]")
             sleep_for(100ms);
             _in_obj = {1,2,3};
 		}, std::ref(vec));
+        
+        REQUIRE(bool {opt_future} == true);
 
         opt_future->wait();
 
@@ -160,6 +166,12 @@ TEST_CASE("Throw exception", "[default-pool]")
     CHECK(get_pool().fibers_no() == 0);
 }
 
+/**
+ * We are going to mock behaviour
+ * of boost::fiber::buffered_channel to
+ * test what's going to happen when the push and pop
+ * of a task from the channel fails.
+ */
 template<typename T>
 class MockChannel
 {
@@ -167,33 +179,33 @@ class MockChannel
 
     using value_type = T;
 
-    explicit MockChannel(size_t capacity) {}
+    explicit MockChannel(...) {}
    
-    template <typename U> 
-    channel_op_status 
-    push(U&& value)
+    channel_op_status push(...)
     {
         return channel_op_status::full;
     }
     
     template <typename U> 
-    channel_op_status 
-    pop(U&& value)
+    channel_op_status pop(U&& value)
     {
         return channel_op_status::full;
     }
     
     void close() noexcept 
     {
-        ;
+        ;// do nothing
     }
 };
 
-TEST_CASE("submiting task failes", "[non-defualt-pool]")
+TEST_CASE("pushing task fails", "[non-default-pool]")
 {
-    ::FiberPool::FiberPool<MockChannel> fiber_pool;
-}
+    ::FiberPool::FiberPool<MockChannel> fiber_pool {1};
 
+    auto opt_future = fiber_pool.submit([](){;});
+
+    CHECK(bool {opt_future} == false);
+}
 
 
 

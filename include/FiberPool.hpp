@@ -15,7 +15,13 @@ no_of_defualt_threads()
     return std::max(std::thread::hardware_concurrency(), 2u) - 1u;
 }
 
-
+/**
+ * A wrapper primarly for boost::fibers::buffered_channel
+ * The buffered_channel has non-virtual member functions
+ * thus cant inherit from it and use it polyformically.
+ * This makes it diffuclt to mock its behaviour in unit tests
+ * The wrapper solves this (see tests for example mock channel)
+ */
 template <typename BaseChannel>
 class TaskQueue 
 {
@@ -61,7 +67,11 @@ private:
     BaseChannel m_base_channel; 
 };
 
-
+/**
+ * All tasks executed by the FiberPool are 
+ * automatically wrapped to use the 
+ * following interface
+ */
 class IFiberTask
 {
 public:
@@ -83,6 +93,7 @@ public:
     virtual void execute() = 0;
 };
 
+
 template<
     template<typename> typename task_queue_t 
         = boost::fibers::buffered_channel,
@@ -91,7 +102,6 @@ template<
 class FiberPool
 {
 private:
-
 
     /**
      * A wrapper for packaged fiber task
@@ -283,19 +293,25 @@ private:
 
     // worker threads. these are the threads which will 
     // be executing our fibers. Since we use work_shearing scheduling
-    // algorithm, the fibers will be shared between these threads
+    // algorithm, the fibers should be shared evenly
+    // between these threads
     std::vector<std::thread> m_threads;
     
-    // use buffered_channel so that we dont block when there is no 
-    // reciver for the fiber. we are only going to block when
-    // the buffered_channel is full. Otherwise, tasks will be just
-    // waiting in the queue till some fiber picks them up.
-    
+    // use buffered_channel (by default) so that we dont block when 
+    // there is no  reciver for the fiber. we are only 
+    // going to block when the buffered_channel is full. 
+    // Otherwise, tasks will be just waiting in the 
+    // queue till some fiber picks them up.
     TaskQueue<task_queue_t<work_task_t>> m_work_queue;
 };
 
 }
 
+/**
+ * A static default FiberPool in which
+ * number of threads is set automatically based
+ * on your hardware
+ */
 namespace DefaultFiberPool
 {
 
