@@ -97,7 +97,8 @@ public:
 template<
     template<typename> typename task_queue_t 
         = boost::fibers::buffered_channel,
-    typename work_task_t = std::unique_ptr<IFiberTask>
+    typename work_task_t = std::tuple<boost::fibers::launch,
+                                      std::unique_ptr<IFiberTask>>
 >
 class FiberPool
 {
@@ -163,7 +164,8 @@ public:
      * Submit a task to be executed as fiber by worker threads
      */
     template<typename Func, typename... Args>
-    auto submit(Func&& func, Args&&... args)
+    auto submit(boost::fibers::launch launch_policy, 
+                Func&& func, Args&&... args)
     {
         // capature our task into lambda with all its parameters
         auto capture = [func = std::forward<Func>(func),
@@ -192,7 +194,9 @@ public:
 
         // finally submit the packaged task into work queue
         auto status = m_work_queue.push(
-                std::make_unique<task_t>(std::move(task)));
+                std::make_tuple(launch_policy, 
+                                std::make_unique<task_t>(
+                                    std::move(task))));
 
         if (status != boost::fibers::channel_op_status::success)
         {
@@ -203,6 +207,19 @@ public:
         // we can get the result when the fiber with our task 
         // completes
         return std::make_optional(std::move(result_future));
+    }
+   
+
+    /**
+     * Use boost::fibers:launch::post as 
+     * default lanuch strategy for fibers
+     */
+    template<typename Func, typename... Args>
+    auto submit(Func&& func, Args&&... args)
+    {
+        return submit(boost::fibers::launch::post,
+                      std::forward<Func>(func),
+                      std::forward<Args>(args)...);
     }
 
     /**
@@ -263,14 +280,14 @@ private:
         
         // create a placeholder for packaged task for 
         // to-be-created fiber to execute
-        auto packaged_search_task 
+        auto task_tuple 
             = typename decltype(m_work_queue)::value_type {}; 
 
         // fetch a packaged task from the work queue.
         // if there is nothing, we are just going to wait
         // here till we get some task
         while(boost::fibers::channel_op_status::success 
-                == m_work_queue.pop(packaged_search_task))
+                == m_work_queue.pop(task_tuple))
         {
             // creates a fiber from the pacakged task.
             //
@@ -278,11 +295,15 @@ private:
             // fetch next task from the queue without blocking
             // the thread and waiting here for the fiber to 
             // complete
-            //
+           
+            // the task is tuple with launch policy and
+            // accutal packaged_task to run 
+            auto& [launch_policy, task_to_run] = task_tuple; 
+            
             // earlier we already got future for the fiber
             // so we can get the result of our task if we want
-            boost::fibers::fiber(
-                    [task = std::move(packaged_search_task)]()
+            boost::fibers::fiber(launch_policy,
+                    [task = std::move(task_to_run)]()
                     {
                         // execute our task in the newly created
                         // fiber
@@ -325,10 +346,22 @@ get_pool()
 
 template <typename Func, typename... Args>
 inline auto 
+submit_job(boost::fibers::launch launch_policy,
+           Func&& func, Args&&... args)
+{
+	return get_pool().submit(
+            launch_policy,
+            std::forward<Func>(func), 
+			std::forward<Args>(args)...);
+}
+
+template <typename Func, typename... Args>
+inline auto 
 submit_job(Func&& func, Args&&... args)
 {
-	return get_pool().submit(std::forward<Func>(func), 
-							 std::forward<Args>(args)...);
+	return get_pool().submit(
+            std::forward<Func>(func), 
+			std::forward<Args>(args)...);
 }
 
 void

@@ -245,7 +245,12 @@ auto future_2 = DefaultFiberPool::submit_job(
     }, std::cref(msg), std::ref(val));
 
 
-auto future_3 = DefaultFiberPool::submit_job(throws);
+// we can also specify fiber launch policy
+// default is post in all other examples.
+// but here we can choose dispatch for instance
+auto future_3 = DefaultFiberPool::submit_job(
+        boost::fibers::launch::dispatch,
+        throws);
 
 // now we dont have any more tasks to submit, so we can 
 // wait for their completion.
