@@ -47,7 +47,7 @@ results and execptions (using futures).
 To compile the example provided:
 
 ```bash
-git clone git@github.com:moneroexamples/fiberpool.git
+git clone https://github.com/moneroexamples/fiberpool.git
 
 cd fiberpool && mkdir build && cd build
 
