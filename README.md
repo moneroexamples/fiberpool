@@ -89,7 +89,7 @@ auto future_1 = DefaultFiberPool::submit_job(
                 while(++i < 5)
                 {
                     std::cout << "lambda task" << std::endl;
-				    boost::this_fiber::sleep_for(5s);
+		    boost::this_fiber::sleep_for(5s);
                 }
 
                 return i;
@@ -118,10 +118,10 @@ auto future_2 = DefaultFiberPool::submit_job(
         [](auto const& in_str, auto& out_str)
         {
     		// give other fibers a chance to run
-			boost::this_fiber::yield();
+		boost::this_fiber::yield();
 
-			// when we get to be executed again, resume
-			// from here
+		// when we get to be executed again, resume
+		// from here
             out_str = in_str;
 
         }, std::cref(msg), std::ref(val));
@@ -181,7 +181,7 @@ uint64_t factorial(uint64_t n)
    if(n > 1)
    {
 	   // give other fiber chance to execute	
-	   // not that we need to yeild() from time to time
+	   // note that we need to yeild() from time to time
 	   // in our tasks so that other finers in the same 
 	   // thread have chance to run		
        boost::this_fiber::yield();
