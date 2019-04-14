@@ -2,9 +2,6 @@
 
 //#define CATCH_CONFIG_MAIN
 #define CATCH_CONFIG_RUNNER
-
-#include <boost/fiber/detail/thread_barrier.hpp>
-
 #include "catch.hpp"
 
 using namespace FiberPool;
@@ -13,7 +10,6 @@ using namespace std::literals::chrono_literals;
 
 using boost::this_fiber::sleep_for;
 using boost::fibers::future;
-using boost::fibers::detail::thread_barrier;
 using boost::fibers::channel_op_status;
 
 TEST_CASE("No of threads and fibers", "[default-pool]") 

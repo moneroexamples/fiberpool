@@ -6,6 +6,7 @@ set(PROJECT_NAME
 project(${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME}
+        EXCLUDE_FROM_ALL
         fibertests.cpp)
 
 target_link_libraries(${PROJECT_NAME}

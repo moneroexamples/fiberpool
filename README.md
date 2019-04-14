@@ -57,7 +57,8 @@ make
 ```
 
 After the compilation `fiberexample` binary should be avaiable. Run it to 
-execute examples. Also can run `make test` to run FiberPool tests.
+execute examples. Also can execute `make check` to compile and
+run FiberPool tests.
 
 ## Example usage
 
