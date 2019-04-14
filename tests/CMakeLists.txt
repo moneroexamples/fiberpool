@@ -5,10 +5,7 @@ set(PROJECT_NAME
 
 project(${PROJECT_NAME})
 
-add_executable(${PROJECT_NAME})
-
-target_sources(${PROJECT_NAME}
-    PRIVATE 
+add_executable(${PROJECT_NAME}
         fibertests.cpp)
 
 target_link_libraries(${PROJECT_NAME}
