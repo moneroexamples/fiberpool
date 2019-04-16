@@ -364,7 +364,7 @@ submit_job(Func&& func, Args&&... args)
 			std::forward<Args>(args)...);
 }
 
-void
+inline void
 close()
 {
 	get_pool().close_queue();
