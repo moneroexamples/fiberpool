@@ -196,7 +196,7 @@ class MockChannel
 
 TEST_CASE("pushing task fails", "[non-default-pool]")
 {
-    ::FiberPool::FiberPool<MockChannel> fiber_pool {1};
+    ::FiberPool::FiberPool<MockChannel> fiber_pool(1);
 
     auto opt_future = fiber_pool.submit([](){;});
 

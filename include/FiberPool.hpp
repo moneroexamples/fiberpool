@@ -141,7 +141,7 @@ public:
         : FiberPool {no_of_defualt_threads()}
     {}
 
-    explicit FiberPool(
+    FiberPool(
             size_t no_of_threads,
             size_t work_queue_size = 32)
 		:   m_threads_no {no_of_threads},
@@ -274,11 +274,12 @@ private:
         // make this thread participate in shared_work 
         // fiber sharing
         //
-        // We use "work_stealing" sheduler. It is 
-        // faster then work_shearing 
-
+        
         boost::fibers::use_scheduling_algorithm<
-            boost::fibers::algo::work_stealing>(m_threads_no);
+            boost::fibers::algo::shared_work>();
+
+        //boost::fibers::use_scheduling_algorithm<
+            //boost::fibers::algo::work_stealing>(m_threads_no);
         
         // create a placeholder for packaged task for 
         // to-be-created fiber to execute
