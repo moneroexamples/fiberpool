@@ -144,13 +144,15 @@ public:
     explicit FiberPool(
             size_t no_of_threads,
             size_t work_queue_size = 32)
-		: m_work_queue {work_queue_size}
+		:   m_threads_no {no_of_threads},
+            m_work_queue {work_queue_size}
     {
         try 
         {
-            for(std::uint32_t i = 0; i < no_of_threads; ++i)
+            for(std::uint32_t i = 0; i < m_threads_no; ++i)
             {
-                m_threads.emplace_back(&FiberPool::worker, this);
+                m_threads.emplace_back(
+                        &FiberPool::worker, this);
             }
         }
         catch(...)
@@ -272,11 +274,11 @@ private:
         // make this thread participate in shared_work 
         // fiber sharing
         //
-        // We use "shared_work" sheduler so that the work 
-        // is distributed equally among all threads
+        // We use "work_stealing" sheduler. It is 
+        // faster then work_shearing 
 
         boost::fibers::use_scheduling_algorithm<
-            boost::fibers::algo::shared_work>();
+            boost::fibers::algo::work_stealing>(m_threads_no);
         
         // create a placeholder for packaged task for 
         // to-be-created fiber to execute
@@ -311,6 +313,8 @@ private:
                     }).detach();
         }
     }
+
+    size_t m_threads_no {1};
 
     // worker threads. these are the threads which will 
     // be executing our fibers. Since we use work_shearing scheduling
