@@ -354,6 +354,24 @@ private:
     TaskQueue<task_queue_t<work_task_t>> m_work_queue;
 };
 
+
+template<
+    template<typename> typename task_queue_t 
+        = boost::fibers::buffered_channel,
+    typename work_task_t = std::tuple<boost::fibers::launch,
+                                      std::unique_ptr<IFiberTask>>
+>
+using FiberPoolStealing = FiberPool<true, task_queue_t, work_task_t>; 
+
+
+template<
+    template<typename> typename task_queue_t 
+        = boost::fibers::buffered_channel,
+    typename work_task_t = std::tuple<boost::fibers::launch,
+                                      std::unique_ptr<IFiberTask>>
+>
+using FiberPoolSharing = FiberPool<false, task_queue_t, work_task_t>; 
+
 }
 
 /**
