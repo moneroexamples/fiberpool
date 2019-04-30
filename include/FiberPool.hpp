@@ -95,6 +95,7 @@ public:
 
 
 template<
+    bool use_work_steal = false,
     template<typename> typename task_queue_t 
         = boost::fibers::buffered_channel,
     typename work_task_t = std::tuple<boost::fibers::launch,
@@ -136,6 +137,9 @@ private:
     }; 
 
 public:
+
+    static constexpr bool work_stealing 
+        = use_work_steal;
 
     FiberPool()
         : FiberPool {no_of_defualt_threads()}
@@ -275,12 +279,31 @@ private:
         // fiber sharing
         //
         
-        boost::fibers::use_scheduling_algorithm<
-            boost::fibers::algo::shared_work>();
 
-        //boost::fibers::use_scheduling_algorithm<
-            //boost::fibers::algo::work_stealing>(m_threads_no);
-        
+        if constexpr(work_stealing)
+        { 
+            // work_stealing sheduling is much faster
+            // than work_shearing, but it does not 
+            // allow for modifying number of threads
+            // at runtime. Therefore if one uses
+            // DefaultFiberPool, no other instance 
+            // of the fiber pool can be created
+            // as this would change the number of
+            // worker threads
+            boost::fibers::use_scheduling_algorithm<
+                boost::fibers::algo::work_stealing>(m_threads_no);
+        }
+        else
+        {
+            // it is slower but, can vary number of 
+            // worker threads at runtime. So you can
+            // use DefaultFiberPool in one part of 
+            // you application, and custom instance
+            // of the fiber pool in other part. 
+            boost::fibers::use_scheduling_algorithm<
+                boost::fibers::algo::shared_work>();
+        }
+
         // create a placeholder for packaged task for 
         // to-be-created fiber to execute
         auto task_tuple 
