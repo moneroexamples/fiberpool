@@ -148,8 +148,9 @@ public:
     FiberPool(
             size_t no_of_threads,
             size_t work_queue_size = 32)
-		:   m_threads_no {no_of_threads},
-            m_work_queue {work_queue_size}
+		: m_threads_no {no_of_threads},
+          m_work_queue {work_queue_size}
+         
     {
         try 
         {
@@ -208,7 +209,7 @@ public:
         {
             return std::optional<std::decay_t<decltype(result_future)>> {};
         }
-
+        
         // return the future to the caller so that 
         // we can get the result when the fiber with our task 
         // completes
@@ -277,51 +278,13 @@ private:
     {
         // make this thread participate in shared_work 
         // fiber sharing
-        //
-        
 
-        if constexpr(work_stealing)
-        { 
-            // work_stealing sheduling is much faster
-            // than work_shearing, but it does not 
-            // allow for modifying number of threads
-            // at runtime. Therefore if one uses
-            // DefaultFiberPool, no other instance 
-            // of the fiber pool can be created
-            // as this would change the number of
-            // worker threads
-            boost::fibers::use_scheduling_algorithm<
-                boost::fibers::algo::work_stealing>(m_threads_no);
-        }
-        else
-        {
-            // it is slower but, can vary number of 
-            // worker threads at runtime. So you can
-            // use DefaultFiberPool in one part of 
-            // you application, and custom instance
-            // of the fiber pool in other part. 
-            boost::fibers::use_scheduling_algorithm<
-                boost::fibers::algo::shared_work>();
-        }
-
-        // create a placeholder for packaged task for 
-        // to-be-created fiber to execute
         auto task_tuple 
             = typename decltype(m_work_queue)::value_type {}; 
-
-        // fetch a packaged task from the work queue.
-        // if there is nothing, we are just going to wait
-        // here till we get some task
+            
         while(boost::fibers::channel_op_status::success 
-                == m_work_queue.pop(task_tuple))
+                            == m_work_queue.pop(task_tuple))
         {
-            // creates a fiber from the pacakged task.
-            //
-            // the fiber is immedietly detached so that we
-            // fetch next task from the queue without blocking
-            // the thread and waiting here for the fiber to 
-            // complete
-           
             // the task is tuple with launch policy and
             // accutal packaged_task to run 
             auto& [launch_policy, task_to_run] = task_tuple; 
@@ -336,6 +299,7 @@ private:
                         task->execute();
                     }).detach();
         }
+            
     }
 
     size_t m_threads_no {1};
@@ -351,8 +315,19 @@ private:
     // going to block when the buffered_channel is full. 
     // Otherwise, tasks will be just waiting in the 
     // queue till some fiber picks them up.
-    TaskQueue<task_queue_t<work_task_t>> m_work_queue;
+    //TaskQueue<task_queue_t<work_task_t>> m_work_queue;
+    task_queue_t<work_task_t> m_work_queue;
 };
+
+
+
+template<
+    template<typename> typename task_queue_t 
+        = boost::fibers::buffered_channel,
+    typename work_task_t = std::tuple<boost::fibers::launch,
+                                      std::unique_ptr<IFiberTask>>
+>
+using FiberPoolSharing = FiberPool<false, task_queue_t, work_task_t>; 
 
 }
 
