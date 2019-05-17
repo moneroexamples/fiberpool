@@ -291,7 +291,8 @@ private:
             // as this would change the number of
             // worker threads
             boost::fibers::use_scheduling_algorithm<
-                boost::fibers::algo::work_stealing>(m_threads_no);
+                boost::fibers::algo::work_stealing>(
+                        m_threads_no, true);
         }
         else
         {
@@ -301,7 +302,7 @@ private:
             // you application, and custom instance
             // of the fiber pool in other part. 
             boost::fibers::use_scheduling_algorithm<
-                boost::fibers::algo::shared_work>();
+                boost::fibers::algo::shared_work>(true);
         }
 
         // create a placeholder for packaged task for 
